@@ -53,7 +53,7 @@
 
 对于滑动窗口中任意一段数据提供丰富的聚合操作，包括但不限于均值、最大最小值、中位数、方差等。
 
-![img](IoTDB流框架功能与详细设计文档.assets/clip_image001.png)
+![img](index.assets/clip_image001.png)
 
 工作基础：Huang X, et al. Pisa: An index for aggregating big time series data. CIKM 2016
 
@@ -63,7 +63,7 @@
 
 给定模式和阈值，对于流数据持续监控并返回与模式之间距离小于阈值的片段。
 
-![img](IoTDB流框架功能与详细设计文档.assets/clip_image001-3624943.png)
+![img](index.assets/clip_image001-3624943.png)
 
 > 工作基础： Kang, Rong, et al. “Matching Consecutive Subpatterns over Streaming Time Series.” APWEB-WAIM, 2018.
 >
@@ -75,7 +75,7 @@
 
 对于一段时间序列，检测反复出现的相似片段，如果这些片段之间的距离小于阈值，返回这些片段。
 
-![img](IoTDB流框架功能与详细设计文档.assets/clip_image002.png)
+![img](index.assets/clip_image002.png)
 
 >  参考实现：Begum, et al. “Rare Time Series Motif Discovery from Unbounded Streams.” PVLDB 2014.
 
@@ -85,7 +85,7 @@
 
 对于窗口内与其他点距离超过阈值的点视为异常点，返回异常点或异常片段。
 
-![img](IoTDB流框架功能与详细设计文档.assets/clip_image003.png)
+![img](index.assets/clip_image003.png)
 
 > 参考实现：Kontaki, M.,et al. “Continuous Monitoring of Distance-Based Outliers over Data Streams.” ICDE 2011.
 
@@ -104,7 +104,7 @@
 
 ### 2.2 流框架总体架构图
 
-![img](IoTDB流框架功能与详细设计文档.assets/流框架结构图.eps)
+![img](index.assets/流框架结构图.png)
 
 ## 第3章 IoTDB流框架的功能设计
 
