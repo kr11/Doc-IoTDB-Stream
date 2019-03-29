@@ -51,3 +51,33 @@ barrier B 先到达 process D，然后做snapshot<br>
 在recovery的过程中，source认为数据点 6 还没被处理，所以重发一次 6，这样就造成streaming中会出现两个数据点 6 的情况。<br>
 
 > <u>*造成这种情况的原因是在第二个barrier C到来之前，节点就已经做了一次snapshot*</u>
+
+
+# 2、之前的问题
+## 1：数据更新怎么办？
+>因为数据是从消息队列读取的，所以只可能会添加，不会更新。<br>
+## 2：watermark 水位线触发后，如果后面的数据仍旧满足的话怎么解决？
+>在flink 的代码里，有一个设置maxOutOfOrder,这个是允许延迟的水位线的大小
+
+```
+private class OdpTimestampWatermark implements AssignerWithPeriodicWatermarks<BayMaxOdpEvent> {
+        private static final long serialVersionUID = 4037153629686337454L;
+        private final long maxOutOfOrder = 60000;
+
+        private long currentMaxTimestamp;
+
+        @Override
+        public long extractTimestamp(BayMaxOdpEvent element, long previousElementTimestamp) {
+            Long timestamp = element.getT();
+            currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
+            return timestamp;
+        }
+
+        @Override
+        public Watermark getCurrentWatermark() {
+            return new Watermark(currentMaxTimestamp - maxOutOfOrder);
+        }
+    }
+
+```
+
