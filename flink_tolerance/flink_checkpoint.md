@@ -9,7 +9,7 @@ channel的local state是从上游发送进channel的message集合减去下游pro
 分布式系统没有共享内存和全局时钟，如果分布式系统有共享内存，那么可以从共享内存中直接获取整个分布式系统的snapshot，不用分别获得各个process、channel的local state再组合成为一个global state。
 未来获得一致性global state，采用chandy-Lamport算法
 (该算法就是在数据中插入marker也就是barrier)
-- <font size="3">at exactly once 模式</font><br> 
+- <font size="3">at exactly once 模式</font><br/> 
 
 如图所示：A是JobManager，B、C是source streaming，D是普通的算子
 JobManager首先发起snapshot，所有source发送barrier。<br>
@@ -36,4 +36,18 @@ process D记录barrier，然后向下游发送barrier.<br>
 
 ![avatar](./s6.jpg)<br>
 
-- at least once 模式
+- <font size="3">at least once 模式</font><br/> 
+只要process接收到barrier之后，就立即开始做snapshot，然后process继续处理所有的channel的数据，后来的snapshot会覆盖之前的snapshot。<br>
+
+barrier B 和 barrier C 向下游process D 传播：<br>
+
+![avatar](./a1.jpg)<br>
+
+barrier B 先到达 process D，然后做snapshot<br>
+![avatar](./a.jpg)<br>
+
+数据点 6 不属于这次的checkpoint，但是却包含在 process D的 local state 中
+![avatar](./a3.jpg)<br>
+在recovery的过程中，source认为数据点 6 还没被处理，所以重发一次 6，这样就造成streaming中会出现两个数据点 6 的情况。<br>
+
+> <u>*造成这种情况的原因是在第二个barrier C到来之前，节点就已经做了一次snapshot*</u>
