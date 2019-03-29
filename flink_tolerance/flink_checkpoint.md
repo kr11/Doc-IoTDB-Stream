@@ -9,8 +9,31 @@ channel的local state是从上游发送进channel的message集合减去下游pro
 分布式系统没有共享内存和全局时钟，如果分布式系统有共享内存，那么可以从共享内存中直接获取整个分布式系统的snapshot，不用分别获得各个process、channel的local state再组合成为一个global state。
 未来获得一致性global state，采用chandy-Lamport算法
 (该算法就是在数据中插入marker也就是barrier)
+- <font size="3">at exactly once 模式</font><br> 
 
 如图所示：A是JobManager，B、C是source streaming，D是普通的算子
-JobManager首先发起snapshot，所有source发送barrier
+JobManager首先发起snapshot，所有source发送barrier。<br>
 
-每个barrier先后到达各自的source。Source在收到barrier后记录自身的state，然后向下游发送barrier。
+![avatar](./s1.jpg)<br>
+
+每个barrier先后到达各自的source。Source在收到barrier后记录自身的state，然后向下游发送barrier。<br>
+
+![avatar](./s2.jpg)<br>
+
+barrier B 到达process D，但是不会进行snapshot，因为还有barrier C没有到达<br>
+
+![avatar](./s3.jpg)<br>
+
+这个时候barrier B已经到达了process D，这个时候channel BD端6、7在process D端不会处理，将它们放到input buffer中。这个时候barrier C没有到达process D.<br>
+
+![avatar](./s4.jpg)<br>
+
+这个时候barrier C也到达了process D，process D已经接受了上游所有的barrier。<br>
+
+![avatar](./s5.jpg)<br>
+
+process D记录barrier，然后向下游发送barrier.<br>
+
+![avatar](./s6.jpg)<br>
+
+- at least once 模式
