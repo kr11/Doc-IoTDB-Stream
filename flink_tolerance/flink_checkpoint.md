@@ -81,3 +81,5 @@ private class OdpTimestampWatermark implements AssignerWithPeriodicWatermarks<Ba
 
 ```
 
+
+> 下周计划，实现一个简单的流式系统，能够打通流的一个版本。
