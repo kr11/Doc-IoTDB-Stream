@@ -28,6 +28,9 @@ Kapacitor作为流数据处理框架，结合TICKScript脚本语言，形成了�
 influx
 # 客户端命令
 create database test
+use test
+# 显示年月日时间。
+precision rfc3339
 ```
 
 采用http请求产生数据：
@@ -48,7 +51,7 @@ t = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 base_time = 1554575034104007000
 for i, code_match in enumerate(code_matches):
     os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d %d"'
-              % (influx, id, base_time + 1 * t[i] * 1e9))
+              % (influx, code_match, base_time + 1 * t[i] * 1e9))
     # 下面两行不指定时间戳，采用机器时间
     # os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d"'
     #           % (influx, id))
@@ -120,30 +123,30 @@ t = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 # t = [0, 1, 2, 6, 5, 4, 3, 7, 8, 9]
 
 # base_time = 1554575034104007000
-for i, id in enumerate(i1):
+for i, code_match in enumerate(i1):
     # os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d %d"'
     #           % (influx, id, base_time + 1 * t[i] * 1e9))
     os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d"'
-              % (influx, id))
+              % (influx, code_match))
     # print("time=%d" % (base_time + 5 * t[i] * 1e9))
     time.sleep(1)
 
 ```
 
-输出日志关键部分如下。为了清晰明了，所有时间戳均写为 `Scene+0s`, 如`S1+5s`。
+输出日志关键部分如下。为了清晰明了，所有时间戳均写为 `Scene+0*{interval}s`, 如`S1+5*1s`。
 
 ```shell
 {"previousLevel":"OK","value":[
-		[S1+3,code_match=1],
-		[S1+4,code_match=0],
+		[S1+3*1s,code_match=1],
+		[S1+4*1s,code_match=0],
 ]},
 {"previousLevel":"CRITICAL","value":[
-		[S1+4,code_match=0],
-		[S1+5,code_match=1],
+		[S1+4*1s,code_match=0],
+		[S1+5*1s,code_match=1],
 ]},
 {"previousLevel":"CRITICAL","value":[
-		[S1+4,code_match=1],
-		[S1+5,code_match=1],
+		[S1+5*1s,code_match=1],
+		[S1+6*1s,code_match=1],
 ]},
 # 本来应该输出下面的记录，但是并没有！
 #{"previousLevel":"OK","value":[
@@ -166,7 +169,7 @@ S2比S1，数据中手动指定了时间。数据时间比真实时间要迟很�
 脚本如下：
 
 1. 数据时间由人为指定；
-2. 数据时间间隔为5，长于window的`every`参数。
+2. 数据时间间隔为5s，长于window的`every`参数。
 3. 数据时间为顺序。
 4. 没有time.sleep(1)，意味着这些记录在真实时间的0.1s内发送到Kapacitor
 
@@ -184,9 +187,9 @@ one_day_nano = 86400 * 1e9
 data_interval = 5
 # base_time比真实时间要晚
 base_time = 1554575034104007000
-for i, id in enumerate(i1):
+for i, code_match in enumerate(i1):
     os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d %d"'
-              % (influx, id, base_time + data_interval * t[i] * 1e9))
+              % (influx, code_match, base_time + data_interval * t[i] * 1e9))
     # os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d"'
     #           % (influx, id))
     # print("time=%d" % (base_time + 5 * t[i] * 1e9))
@@ -199,19 +202,19 @@ for i, id in enumerate(i1):
 ```shell
 # S1的最后测试例现在才触发
 {"previousLevel":"OK","value":[
-		[S1+8,code_match=1],
-		[S1+9,code_match=0],
+		[S1+8*1s,code_match=1],
+		[S1+9*1s,code_match=0],
 ]},
 # 因为上一个window是异常，因此输出。又因为数据时间之间超出了3s，因此只有一个点。
 {"previousLevel":"CRITICAL","value":[
-		[S2+0,code_match=1],
+		[S2+0*5s,code_match=1],
 ]},
 # 数据时间间隔为5s>3s，因此只记录1个点，与真实时间无关
 {"previousLevel":"OK","value":[
-		[S2+4,code_match=0],
+		[S2+4*5s,code_match=0],
 ]},
 {"previousLevel":"CRITICAL","value":[
-		[S2+5,code_match=1],
+		[S2+5*5s,code_match=1],
 ]},
 
 ```
@@ -247,9 +250,9 @@ one_day_nano = 86400 * 1e9
 data_interval = 1
 # base_time比真实时间要晚
 base_time = 1554575034104007000+one_day_nano
-for i, id in enumerate(i1):
+for i, code_match in enumerate(i1):
     os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d %d"'
-              % (influx, id, base_time + data_interval * t[i] * 1e9))
+              % (influx, code_match, base_time + data_interval * t[i] * 1e9))
     # os.system('curl -i -XPOST %s --data-binary "ka,app=cmdb code_match=%d"'
     #           % (influx, id))
     # print("time=%d" % (base_time + 5 * t[i] * 1e9))
@@ -263,38 +266,45 @@ for i, id in enumerate(i1):
 # S2结尾时候的异常引发两条alert，不赘述
 # alert 0
 {"previousLevel":"OK","value":[
-		[S2+9,code_match=0],
+		[S2+9*5s,code_match=0],
 ]},
 # alert 1
 {"previousLevel":"CRITICAL","value":[
-		[S3+0,code_match=1],
+		[S3+0*1s,code_match=1],
 ]},
 
 # 关键
 # alert 2
 {"previousLevel":"OK","value":[
-		[S3+6,code_match=1],
-    [S3+5,code_match=0],
-    [S3+4,code_match=1],
-    [S3+3,code_match=1],
+		[S3+6*1s,code_match=1],
+    [S3+5*1s,code_match=0],
+    [S3+4*1s,code_match=1],
+    [S3+3*1s,code_match=1],
 ]},
 # alert 3
 {"previousLevel":"CRITICAL","value":[
-		[S3+6,code_match=1],
-    [S3+5,code_match=0],
-    [S3+4,code_match=1],
-    [S3+3,code_match=1],
-    [S3+7,code_match=1],
+		[S3+6*1s,code_match=1],
+    [S3+5*1s,code_match=0],
+    [S3+4*1s,code_match=1],
+    [S3+3*1s,code_match=1],
+    [S3+7*1s,code_match=1],
 ]},
 # alert 4
 {"previousLevel":"CRITICAL","value":[
-		[S3+6,code_match=1],
-    [S3+5,code_match=0],
-    [S3+4,code_match=1],
-    [S3+3,code_match=1],
-    [S3+7,code_match=1],
-    [S3+8,code_match=1],
+		[S3+6*1s,code_match=1],
+    [S3+5*1s,code_match=0],
+    [S3+4*1s,code_match=1],
+    [S3+3*1s,code_match=1],
+    [S3+7*1s,code_match=1],
+    [S3+8*1s,code_match=1],
 ]},
+
+# alert 5，等到下一次，S4才会触发。注意到，此时window恢复正常，说明S3+5*1s退出窗口
+{"previousLevel":"OK","value":[
+		[S3+8*1s,code_match=1],
+    [S3+9*1s,code_match=0],
+]},
+
 
 ```
 
